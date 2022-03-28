@@ -5,18 +5,17 @@ import { debounceTime, map, merge, Observable, Subject, switchMap, takeUntil } f
 import { fuseAnimations } from '@fuse/animations';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
 import { Pagination } from 'app/shared/shared.types';
-import { EmployeeService } from '../../employee/employee.service';
-import { GetAllEmployeeResponseDto } from '../../employee/employee.types';
-import { SearchExpenseClaimResponseDto, UpdateExpenseResponseDto } from '../expense.types';
-import { ExpenseService } from '../expense.service';
+import { GetClaimDetailsResponseDto, UpdateExpenseDetailResponseDto, UpdateExpenseResponseDto } from '../../expense.types';
+import { ActivatedRoute } from '@angular/router';
+import { ExpenseService } from '../../expense.service';
 
 @Component({
-    selector       : 'expense-list',
-    templateUrl    : './expense-list.component.html',
+    selector       : 'expense-details-list',
+    templateUrl    : './expense-details-list.component.html',
     styles         : [
         /* language=SCSS */
         `
-            .expense-grid {
+            .expense-details-grid {
                 grid-template-columns: 48px auto 40px;
 
                 @screen sm {
@@ -37,18 +36,18 @@ import { ExpenseService } from '../expense.service';
     changeDetection: ChangeDetectionStrategy.OnPush,
     animations     : fuseAnimations
 })
-export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
+export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDestroy
 {
     @ViewChild(MatPaginator) private _paginator: MatPaginator;
 
-    expenses$: Observable<SearchExpenseClaimResponseDto[]>;
+    expenseDetails$: Observable<GetClaimDetailsResponseDto[]>;
     flashMessage: 'success' | 'error' | null = null;
     isLoading: boolean = false;
     pagination: Pagination;
-    selectedExpense: UpdateExpenseResponseDto | null = null;
-    selectedExpenseForm: FormGroup;
-    employees: GetAllEmployeeResponseDto[];
-    searchEmployeeControl: FormControl = new FormControl();
+    selectedExpenseDetail: UpdateExpenseDetailResponseDto | null = null;
+    selectedExpenseDetailForm: FormGroup;
+    currentClaimId: string;
+    descriptionClaim:string;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
     /**
@@ -58,8 +57,8 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
         private _changeDetectorRef: ChangeDetectorRef,
         private _fuseConfirmationService: FuseConfirmationService,
         private _formBuilder: FormBuilder,
-        private _expenseService: ExpenseService,
-        private _employeeService: EmployeeService
+        private _route: ActivatedRoute,
+        private _expenseService: ExpenseService
     )
     {
     }
@@ -73,28 +72,16 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
      */
     ngOnInit(): void
     {
-        this.searchEmployeeControl.setValue('0');
+      
+        //get claim Id from route params and set it to currentClaimId
+        this.currentClaimId = this._route.snapshot.paramMap.get('id'); 
 
-        // Create the selected expense form
-        this.selectedExpenseForm = this._formBuilder.group({
-            expenseClaimId                  : [''],
-            employeeId                      : ['', [Validators.required]],
+        // Create the selected expense detail form
+        this.selectedExpenseDetailForm = this._formBuilder.group({
+            expenseClaimDetailId            : [''],
+            expenseClaimId                  : this.currentClaimId,
             description                     : [''],
         });
-
-        // Get the employees
-         this._employeeService._allEmployees$
-         .pipe(takeUntil(this._unsubscribeAll))
-         .subscribe((employees: GetAllEmployeeResponseDto[]) => {
-
-
-             // Update the employees
-             this.employees = employees;
-
-             // Mark for check
-             this._changeDetectorRef.markForCheck();
-         });
-
 
         // Get the pagination
         this._expenseService.pagination$
@@ -108,24 +95,17 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
                 this._changeDetectorRef.markForCheck();
             });
 
+        // get description from claim
+         this._expenseService.getExpenseTilte(parseInt(this.currentClaimId)).subscribe({
+            next: (claimTitle: string) => {
+                this.descriptionClaim = claimTitle;
+            }
+        });
 
-            this.searchEmployeeControl.valueChanges
-            .pipe(
-                takeUntil(this._unsubscribeAll),
-                debounceTime(300),
-                switchMap((query) => {
-                    this.closeDetails();
-                    this.isLoading = true;
-                    return this._expenseService.getExpenses(0, 10, query);
-                }),
-                map(() => {
-                    this.isLoading = false;
-                })
-            )
-            .subscribe();
+        // Get the expenses
+        this.expenseDetails$ = this._expenseService._expenseDetails$; 
 
-            // Get the expenses
-            this.expenses$ = this._expenseService._expenses$; 
+           
 }
 
     /**
@@ -133,17 +113,19 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
      */
     ngAfterViewInit(): void
     {
+
+
         if ( this._paginator )
         {
             // Mark for check
             this._changeDetectorRef.markForCheck();
 
-            // Get expenses if page changes
+            // Get expense details if page changes
             merge(this._paginator.page).pipe(
                 switchMap(() => {
                     this.closeDetails();
                     this.isLoading = true;
-                    return this._expenseService.getExpenses(this._paginator.pageIndex, this._paginator.pageSize, this.searchEmployeeControl.value);
+                    return this._expenseService.getExpenseDetails(this._paginator.pageIndex, this._paginator.pageSize, parseInt(this.currentClaimId));
                 }),
                 map(() => {
                     this.isLoading = false;
@@ -169,27 +151,27 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
     /**
      * Toggle expense details
      *
-     * @param expenseId
+     * @param expenseDetailId
      */
-    toggleDetails(expenseId: string): void
+    toggleDetails(expenseDetailId: string): void
     {
-        // If the expense is already selected...
-        if ( this.selectedExpense && this.selectedExpense.expenseClaimId === parseInt(expenseId) )
+        // If the expense detail is already selected...
+        if ( this.selectedExpenseDetail && this.selectedExpenseDetail.expenseClaimDetailId === parseInt(expenseDetailId) )
         {
             // Close the details
             this.closeDetails();
             return;
         }
 
-        // Get the expense by id
-        this._expenseService.getExpenseById(expenseId)
-            .subscribe((expense) => {
+        // Get the expense detail by id
+        this._expenseService.getExpenseDetailById(expenseDetailId)
+            .subscribe((expenseDetail) => {
 
-                // Set the selected expense
-                this.selectedExpense = expense;
+                // Set the selected expense detail
+                this.selectedExpenseDetail = expenseDetail;
 
                 // Fill the form
-                this.selectedExpenseForm.patchValue(expense);
+                this.selectedExpenseDetailForm.patchValue(expenseDetail);
 
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
@@ -201,23 +183,23 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
      */
     closeDetails(): void
     {
-        this.selectedExpense = null;
+        this.selectedExpenseDetail = null;
     }
 
 
     /**
-     * Create expense
+     * Create expense detail
      */
-    createExpense(): void
+    createExpenseDetail(): void
     {
-        // Create the expense
-        this._expenseService.createExpense().subscribe((newexpense) => {
+        // Create the expense detail
+        this._expenseService.createExpenseDetail().subscribe((newExpenseDetail) => {
 
-            // Go to new expense
-            this.selectedExpense = newexpense;
+            // Go to new expense  detail  
+            this.selectedExpenseDetail = newExpenseDetail;
 
             // Fill the form
-            this.selectedExpenseForm.patchValue(newexpense);
+            this.selectedExpenseDetailForm.patchValue(newExpenseDetail);
 
             // Mark for check
             this._changeDetectorRef.markForCheck();
@@ -225,15 +207,15 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     /**
-     * Update the selected expense using the form data
+     * Update the selected expense detail using the form data
      */
-    updateSelectedExpense(): void
+    updateSelectedExpenseDetail(): void
     {
-        // Get the expense object
-        const expense = this.selectedExpenseForm.getRawValue();
+        // Get the expense detail object
+        const expenseDetail = this.selectedExpenseDetailForm.getRawValue();
 
-        // Update the expense on the server
-        this._expenseService.updateExpense(expense).subscribe(() => {
+        // Update the expense detail on the server
+        this._expenseService.updateExpenseDetail(expenseDetail).subscribe(() => {
 
             // Show a success message
             this.showFlashMessage('success');
@@ -241,14 +223,14 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     /**
-     * Delete the selected expense using the form data
+     * Delete the selected expense detail using the form data
      */
-    deleteSelectedExpense(): void
+    deleteSelectedExpenseDetail(): void
     {
         // Open the confirmation dialog
         const confirmation = this._fuseConfirmationService.open({
-            title  : 'Delete Expense',
-            message: 'Are you sure you want to remove this expense? This action cannot be undone!',
+            title  : 'Delete Detail',
+            message: 'Are you sure you want to remove this expense detail? This action cannot be undone!',
             actions: {
                 confirm: {
                     label: 'Delete'
@@ -264,10 +246,10 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
             {
 
                 // Get the expense object
-                const expense = this.selectedExpenseForm.getRawValue();
+                const expenseDetail = this.selectedExpenseDetailForm.getRawValue();
 
                 // Delete the expense on the server
-                this._expenseService.deleteExpense(expense.expenseClaimId).subscribe(() => {
+                this._expenseService.deleteExpenseDetail(expenseDetail.expenseClaimDetailId).subscribe(() => {
 
                     // Close the details
                     this.closeDetails();
@@ -305,6 +287,6 @@ export class ExpenseListComponent implements OnInit, AfterViewInit, OnDestroy
      */
     trackByFn(index: number, item: any): any
     {
-        return item.expenseClaimId || index;
+        return item.expenseClaimDetailId || index;
     }
 }

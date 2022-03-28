@@ -5,7 +5,7 @@ import { PaggingOperationResult } from 'app/shared/shared.types';
 import { EmployeeService } from '../employee/employee.service';
 import { GetAllEmployeeResponseDto } from '../employee/employee.types';
 import { ExpenseService } from './expense.service';
-import { SearchExpenseClaimResponseDto } from './expense.types';
+import { GetClaimDetailsResponseDto, SearchExpenseClaimResponseDto } from './expense.types';
 
 
 
@@ -64,6 +64,35 @@ export class AllEmployeesResolver implements Resolve<any>
     resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<PaggingOperationResult<GetAllEmployeeResponseDto>>
     {
         return this._employeeService.getAllEmployees();
+    }
+}
+
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ExpenseDetailsResolver implements Resolve<any>
+{
+    /**
+     * Constructor
+     */
+    constructor(private _expenseService: ExpenseService)
+    {
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Resolver
+     *
+     * @param route
+     * @param state
+     */
+    resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<PaggingOperationResult<GetClaimDetailsResponseDto>>
+    {
+        return this._expenseService.getExpenseDetails();
     }
 }
 
