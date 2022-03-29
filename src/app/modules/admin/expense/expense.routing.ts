@@ -1,6 +1,6 @@
 import { Route } from '@angular/router';
 import { ExpenseComponent } from './expense.component';
-import { AllEmployeesResolver, ExpenseDetailsResolver, ExpensesResolver } from './expense.resolvers';
+import { AllEmployeesResolver, ExpensesResolver } from './expense.resolvers';
 import { ExpenseListComponent } from './list/expense-list.component';
 
 export const expenseRoutes: Route[] = [

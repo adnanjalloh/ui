@@ -275,11 +275,14 @@ export class ExpenseService {
                 map((expenseDetailsResult) => {
 
                     // Find the index of the updated expense detail
-                    const index = expenseDetails.findIndex(item => item.expenseClaimId === expenseDetail.expenseClaimId);
+                    const index = expenseDetails.findIndex(item => item.expenseClaimDetailId === expenseDetail.expenseClaimDetailId);
 
                     // Update the expense detail
                     expenseDetails[index] = expenseDetailsResult.response;
 
+                    console.log(expenseDetails);
+                    console.log(expenseDetailsResult);
+                    console.log(expenseDetail);
                     // Update the expense details
                     this._expenseDetail.next(expenseDetail);
 

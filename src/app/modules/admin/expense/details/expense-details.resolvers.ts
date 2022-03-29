@@ -30,7 +30,7 @@ export class ExpenseDetailsResolver implements Resolve<any>
     resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<PaggingOperationResult<GetClaimDetailsResponseDto>>
     {
         const id = parseInt(route.paramMap.get('id'));
-        return this._expenseService.getExpenseDetails(0, 11, id);
+        return this._expenseService.getExpenseDetails(0, 10, id);
     }
 }
 

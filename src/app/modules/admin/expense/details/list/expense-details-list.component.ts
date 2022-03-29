@@ -10,9 +10,9 @@ import { ActivatedRoute } from '@angular/router';
 import { ExpenseService } from '../../expense.service';
 
 @Component({
-    selector       : 'expense-details-list',
-    templateUrl    : './expense-details-list.component.html',
-    styles         : [
+    selector: 'expense-details-list',
+    templateUrl: './expense-details-list.component.html',
+    styles: [
         /* language=SCSS */
         `
             .expense-details-grid {
@@ -32,12 +32,11 @@ import { ExpenseService } from '../../expense.service';
             }
         `
     ],
-    encapsulation  : ViewEncapsulation.None,
+    encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    animations     : fuseAnimations
+    animations: fuseAnimations
 })
-export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDestroy
-{
+export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild(MatPaginator) private _paginator: MatPaginator;
 
     expenseDetails$: Observable<GetClaimDetailsResponseDto[]>;
@@ -46,8 +45,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     pagination: Pagination;
     selectedExpenseDetail: UpdateExpenseDetailResponseDto | null = null;
     selectedExpenseDetailForm: FormGroup;
-    currentClaimId: string;
-    descriptionClaim:string;
+    descriptionClaim: string;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
     /**
@@ -59,28 +57,25 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
         private _formBuilder: FormBuilder,
         private _route: ActivatedRoute,
         private _expenseService: ExpenseService
-    )
-    {
+    ) {
     }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Lifecycle hooks
     // -----------------------------------------------------------------------------------------------------
 
+
+
     /**
      * On init
      */
-    ngOnInit(): void
-    {
-      
-        //get claim Id from route params and set it to currentClaimId
-        this.currentClaimId = this._route.snapshot.paramMap.get('id'); 
-
+    ngOnInit(): void {
         // Create the selected expense detail form
         this.selectedExpenseDetailForm = this._formBuilder.group({
-            expenseClaimDetailId            : [''],
-            expenseClaimId                  : this.currentClaimId,
-            description                     : [''],
+            expenseClaimDetailId: [''],
+            expenseClaimId: this.currentClaimId,
+            description: [''],
+            total: ['']
         });
 
         // Get the pagination
@@ -96,27 +91,25 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
             });
 
         // get description from claim
-         this._expenseService.getExpenseTilte(parseInt(this.currentClaimId)).subscribe({
+        this._expenseService.getExpenseTilte(parseInt(this.currentClaimId)).subscribe({
             next: (claimTitle: string) => {
                 this.descriptionClaim = claimTitle;
             }
         });
 
-        // Get the expenses
-        this.expenseDetails$ = this._expenseService._expenseDetails$; 
+        // Get the expense details
+        this.expenseDetails$ = this._expenseService._expenseDetails$;
 
-           
-}
+
+    }
 
     /**
      * After view init
      */
-    ngAfterViewInit(): void
-    {
+    ngAfterViewInit(): void {
 
 
-        if ( this._paginator )
-        {
+        if (this._paginator) {
             // Mark for check
             this._changeDetectorRef.markForCheck();
 
@@ -137,8 +130,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     /**
      * On destroy
      */
-    ngOnDestroy(): void
-    {
+    ngOnDestroy(): void {
         // Unsubscribe from all subscriptions
         this._unsubscribeAll.next(null);
         this._unsubscribeAll.complete();
@@ -148,16 +140,20 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------
 
+
+    //get claim Id from route params
+    get currentClaimId(): string {
+        return this._route.snapshot.paramMap.get('id');
+    }
+
     /**
      * Toggle expense details
      *
      * @param expenseDetailId
      */
-    toggleDetails(expenseDetailId: string): void
-    {
+    toggleDetails(expenseDetailId: string): void {
         // If the expense detail is already selected...
-        if ( this.selectedExpenseDetail && this.selectedExpenseDetail.expenseClaimDetailId === parseInt(expenseDetailId) )
-        {
+        if (this.selectedExpenseDetail && this.selectedExpenseDetail.expenseClaimDetailId === parseInt(expenseDetailId)) {
             // Close the details
             this.closeDetails();
             return;
@@ -181,8 +177,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     /**
      * Close the details
      */
-    closeDetails(): void
-    {
+    closeDetails(): void {
         this.selectedExpenseDetail = null;
     }
 
@@ -190,8 +185,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     /**
      * Create expense detail
      */
-    createExpenseDetail(): void
-    {
+    createExpenseDetail(): void {
         // Create the expense detail
         this._expenseService.createExpenseDetail().subscribe((newExpenseDetail) => {
 
@@ -209,10 +203,11 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     /**
      * Update the selected expense detail using the form data
      */
-    updateSelectedExpenseDetail(): void
-    {
+    updateSelectedExpenseDetail(): void {
         // Get the expense detail object
         const expenseDetail = this.selectedExpenseDetailForm.getRawValue();
+
+        expenseDetail.expenseClaimId = parseInt(this.currentClaimId);
 
         // Update the expense detail on the server
         this._expenseService.updateExpenseDetail(expenseDetail).subscribe(() => {
@@ -225,11 +220,10 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     /**
      * Delete the selected expense detail using the form data
      */
-    deleteSelectedExpenseDetail(): void
-    {
+    deleteSelectedExpenseDetail(): void {
         // Open the confirmation dialog
         const confirmation = this._fuseConfirmationService.open({
-            title  : 'Delete Detail',
+            title: 'Delete Detail',
             message: 'Are you sure you want to remove this expense detail? This action cannot be undone!',
             actions: {
                 confirm: {
@@ -242,8 +236,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
         confirmation.afterClosed().subscribe((result) => {
 
             // If the confirm button pressed...
-            if ( result === 'confirmed' )
-            {
+            if (result === 'confirmed') {
 
                 // Get the expense object
                 const expenseDetail = this.selectedExpenseDetailForm.getRawValue();
@@ -261,8 +254,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     /**
      * Show flash message
      */
-    showFlashMessage(type: 'success' | 'error'): void
-    {
+    showFlashMessage(type: 'success' | 'error'): void {
         // Show the message
         this.flashMessage = type;
 
@@ -285,8 +277,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
      * @param index
      * @param item
      */
-    trackByFn(index: number, item: any): any
-    {
+    trackByFn(index: number, item: any): any {
         return item.expenseClaimDetailId || index;
     }
 }
