@@ -4,7 +4,6 @@ import { BehaviorSubject, filter, map, Observable, of, switchMap, take, tap, thr
 import { environment } from 'environments/environment';
 import { OperationResponseResult, OperationResult, PaggingOperationResult, Pagination, QueryParam } from 'app/shared/shared.types';
 import { GetClaimDetailsRequestDto, GetClaimDetailsResponseDto, SearchExpenseClaimRequestDto, SearchExpenseClaimResponseDto, UpdateExpenseDetailRequestDto, UpdateExpenseDetailResponseDto, UpdateExpenseRequestDto, UpdateExpenseResponseDto } from './expense.types';
-import { GetAllLeaveTypeResponseDto } from '../leave/leave.types';
 
 @Injectable({
     providedIn: 'root'
@@ -16,6 +15,7 @@ export class ExpenseService {
     private _expense: BehaviorSubject<UpdateExpenseResponseDto | null> = new BehaviorSubject(null);
     private _expenseDetails: BehaviorSubject<GetClaimDetailsResponseDto[] | null> = new BehaviorSubject(null);
     private _expenseDetail: BehaviorSubject<UpdateExpenseDetailResponseDto | null> = new BehaviorSubject(null);
+    private _descriptionClaim: BehaviorSubject<string | null> = new BehaviorSubject(null);
     private _baseUrl: string = environment.apiUrl;
     /**
      * Constructor
@@ -71,6 +71,9 @@ export class ExpenseService {
     }
 
 
+    get _descriptionClaim$(): Observable<string> {
+        return this._descriptionClaim.asObservable();
+    }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods
@@ -363,13 +366,13 @@ export class ExpenseService {
     }
 
     /**
-     * Get expense by id from server 
+     * Get description title
      * @param id
      * */
-    getExpenseTilte(id: number = 0): Observable<string> {
+    getExpenseTilte(id: number = 0): Observable<OperationResponseResult<string>> {
         return this._httpClient.get<OperationResponseResult<string>>(this._baseUrl + 'expense/get-expense-title', { params: { id } }).pipe(
-            map((response) => {
-                return response.response;
+            tap((response) => {
+                this._descriptionClaim.next(response.response);
             }   
         ));
     }

@@ -45,7 +45,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
     pagination: Pagination;
     selectedExpenseDetail: UpdateExpenseDetailResponseDto | null = null;
     selectedExpenseDetailForm: FormGroup;
-    descriptionClaim: string;
+    descriptionClaim$: Observable<string>;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
     /**
@@ -91,11 +91,7 @@ export class ExpenseDetailsListComponent implements OnInit, AfterViewInit, OnDes
             });
 
         // get description from claim
-        this._expenseService.getExpenseTilte(parseInt(this.currentClaimId)).subscribe({
-            next: (claimTitle: string) => {
-                this.descriptionClaim = claimTitle;
-            }
-        });
+        this.descriptionClaim$ = this._expenseService._descriptionClaim$;
 
         // Get the expense details
         this.expenseDetails$ = this._expenseService._expenseDetails$;
